@@ -7,15 +7,16 @@ export interface WeatherData {
     sunrise: number;
     sunset: number;
   };
-  daily: Array<{
+  daily: {
     dt: number;
-    temp: number | { day: number };
-    weather: Array<{
+    temp: number; // Updated from object to number
+    weather: {
+      id: number;
       main: string;
       description: string;
       icon: string;
-    }>;
-  }>;
+    }[];
+  }[];
 }
 
 export interface Coordinates {

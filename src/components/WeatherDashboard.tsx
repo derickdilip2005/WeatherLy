@@ -94,6 +94,7 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
           `https://api.openweathermap.org/data/2.5/forecast?lat=${coordinates.lat}&lon=${coordinates.lon}&units=metric&appid=${OPENWEATHER_API_KEY}`
         );
 
+        // Update the forecast data mapping
         const formattedData: WeatherData = {
           current: {
             temp: currentWeather.data.main.temp,
@@ -108,7 +109,7 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
             .slice(0, 5)
             .map((day: WeatherListItem) => ({
               dt: day.dt,
-              temp: { day: day.main.temp },
+              temp: day.main.temp, // Simplified temperature structure
               weather: day.weather
             }))
         };
@@ -156,12 +157,12 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
             {weatherData.daily.map((day, index) => (
               <div key={index} className="flex justify-between items-center">
                 <span className="text-red-400/80">{day.dt ? new Date(day.dt * 1000).toLocaleDateString() : 'N/A'}</span>
-                <span className="text-red-400"></span>
-                  {typeof day.temp === 'object' && day.temp?.day !== undefined 
-                    ? Math.round(day.temp.day) + '°C' 
-                    : typeof day.temp === 'number' 
-                      ? Math.round(day.temp) + '°C'
-                      : 'N/A'}
+                // Update the temperature display in the 5-Day Forecast Card
+                <span className="text-red-400">
+                  {day.temp !== undefined 
+                    ? `${Math.round(day.temp)}°C`
+                    : 'N/A'}
+                </span>
                 </div>
               ))}
             </div>
