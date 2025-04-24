@@ -157,16 +157,16 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
             {weatherData.daily.map((day, index) => (
               <div key={index} className="flex justify-between items-center">
                 <span className="text-red-400/80">{day.dt ? new Date(day.dt * 1000).toLocaleDateString() : 'N/A'}</span>
-                // Update the temperature display in the 5-Day Forecast Card
+                {/* Temperature display */}
                 <span className="text-red-400">
                   {day.temp !== undefined 
                     ? `${Math.round(day.temp)}°C`
                     : 'N/A'}
                 </span>
-                </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
+        </div>
 
           {/* Weather Details Card */}
           <div className="p-6 bg-[#1c1917] rounded-xl shadow-lg border-2 border-red-500 transform hover:scale-105 transition-transform duration-300">
