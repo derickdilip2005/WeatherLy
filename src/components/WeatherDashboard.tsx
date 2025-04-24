@@ -7,18 +7,31 @@ import { OPENWEATHER_API_KEY } from '@/config/api';
 import { WeatherData, Coordinates } from '@/types/weather';
 import LoadingScreen from './LoadingScreen';
 
+interface WeatherListItem {
+  dt: number;
+  main: {
+    temp: number;
+  };
+  weather: {
+    id: number;
+    main: string;
+    description: string;
+    icon: string;
+  }[];
+}
+
 export default function WeatherDashboard({ coordinates }: { coordinates: Coordinates }) {
   const cardsRef = useRef<HTMLDivElement[]>([]);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Remove the mapHtml state since we'll use react-leaflet
-  // const [mapHtml, setMapHtml] = useState<string>('');
 
   // GSAP animation effect
   useEffect(() => {
     if (weatherData && cardsRef.current.length > 0) {
+      const currentCards = cardsRef.current; // Store ref value
+      
       // Initial animation for cards
-      gsap.fromTo(cardsRef.current,
+      gsap.fromTo(currentCards,
         { 
           opacity: 0, 
           y: 100,
@@ -38,7 +51,7 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
       );
 
       // Add hover animations
-      cardsRef.current.forEach(card => {
+      currentCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
           gsap.to(card, {
             scale: 1.05,
@@ -57,15 +70,15 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
           });
         });
       });
-    }
 
-    // Cleanup function
-    return () => {
-      cardsRef.current.forEach(card => {
-        card?.removeEventListener('mouseenter', () => {});
-        card?.removeEventListener('mouseleave', () => {});
-      });
-    };
+      // Use stored ref value in cleanup
+      return () => {
+        currentCards.forEach(card => {
+          card?.removeEventListener('mouseenter', () => {});
+          card?.removeEventListener('mouseleave', () => {});
+        });
+      };
+    }
   }, [weatherData]);
 
   // Fetch weather data effect
@@ -74,7 +87,6 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
       if (coordinates.lat === 0 && coordinates.lon === 0) return;
 
       try {
-        // Directly fetch from OpenWeatherMap API
         const currentWeather = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather?lat=${coordinates.lat}&lon=${coordinates.lon}&units=metric&appid=${OPENWEATHER_API_KEY}`
         );
@@ -92,9 +104,9 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
             sunset: currentWeather.data.sys.sunset
           },
           daily: forecast.data.list
-            .filter((_: any, index: number) => index % 8 === 0)
+            .filter((_: unknown, index: number) => index % 8 === 0)
             .slice(0, 5)
-            .map((day: any) => ({
+            .map((day: WeatherListItem) => ({
               dt: day.dt,
               temp: { day: day.main.temp },
               weather: day.weather
@@ -112,7 +124,7 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
     fetchWeatherData();
   }, [coordinates]);
 
-  // Add a log to check weatherData state
+  // Debug log effect
   useEffect(() => {
     console.log('Weather data state:', weatherData);
   }, [weatherData]);
@@ -144,54 +156,53 @@ export default function WeatherDashboard({ coordinates }: { coordinates: Coordin
             {weatherData.daily.map((day, index) => (
               <div key={index} className="flex justify-between items-center">
                 <span className="text-red-400/80">{day.dt ? new Date(day.dt * 1000).toLocaleDateString() : 'N/A'}</span>
-                <span className="text-red-400">
+                <span className="text-red-400"></span>
                   {typeof day.temp === 'object' && day.temp?.day !== undefined 
                     ? Math.round(day.temp.day) + '°C' 
                     : typeof day.temp === 'number' 
                       ? Math.round(day.temp) + '°C'
                       : 'N/A'}
-                </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Weather Details Card */}
+          <div className="p-6 bg-[#1c1917] rounded-xl shadow-lg border-2 border-red-500 transform hover:scale-105 transition-transform duration-300">
+            <h2 className="text-2xl font-bold mb-4 text-red-500 border-b border-red-500/20 pb-2">Weather Details</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-red-400/80">Humidity</span>
+                <span className="text-red-400">{weatherData.current.humidity !== undefined ? weatherData.current.humidity + '%' : 'N/A'}</span>
               </div>
-            ))}
+              <div className="flex justify-between items-center">
+                <span className="text-red-400/80">Pressure</span>
+                <span className="text-red-400">{weatherData.current.pressure !== undefined ? weatherData.current.pressure + ' hPa' : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-red-400/80">Wind Speed</span>
+                <span className="text-red-400">{weatherData.current.wind_speed !== undefined ? weatherData.current.wind_speed + ' m/s' : 'N/A'}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Weather Details Card */}
-        <div className="p-6 bg-[#1c1917] rounded-xl shadow-lg border-2 border-red-500 transform hover:scale-105 transition-transform duration-300">
-          <h2 className="text-2xl font-bold mb-4 text-red-500 border-b border-red-500/20 pb-2">Weather Details</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-red-400/80">Humidity</span>
-              <span className="text-red-400">{weatherData.current.humidity !== undefined ? weatherData.current.humidity + '%' : 'N/A'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-red-400/80">Pressure</span>
-              <span className="text-red-400">{weatherData.current.pressure !== undefined ? weatherData.current.pressure + ' hPa' : 'N/A'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-red-400/80">Wind Speed</span>
-              <span className="text-red-400">{weatherData.current.wind_speed !== undefined ? weatherData.current.wind_speed + ' m/s' : 'N/A'}</span>
+          {/* Sun Times Card */}
+          <div className="p-6 bg-[#1c1917] rounded-xl shadow-lg border-2 border-red-500 transform hover:scale-105 transition-transform duration-300">
+            <h2 className="text-2xl font-bold mb-4 text-red-500 border-b border-red-500/20 pb-2">Sun Times</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-red-400/80">Sunrise</span>
+                <span className="text-red-400">{weatherData.current.sunrise !== undefined ? new Date(weatherData.current.sunrise * 1000).toLocaleTimeString() : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-red-400/80">Sunset</span>
+                <span className="text-red-400">{weatherData.current.sunset !== undefined ? new Date(weatherData.current.sunset * 1000).toLocaleTimeString() : 'N/A'}</span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Sun Times Card */}
-        <div className="p-6 bg-[#1c1917] rounded-xl shadow-lg border-2 border-red-500 transform hover:scale-105 transition-transform duration-300">
-          <h2 className="text-2xl font-bold mb-4 text-red-500 border-b border-red-500/20 pb-2">Sun Times</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-red-400/80">Sunrise</span>
-              <span className="text-red-400">{weatherData.current.sunrise !== undefined ? new Date(weatherData.current.sunrise * 1000).toLocaleTimeString() : 'N/A'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-red-400/80">Sunset</span>
-              <span className="text-red-400">{weatherData.current.sunset !== undefined ? new Date(weatherData.current.sunset * 1000).toLocaleTimeString() : 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Remove the entire Map Container section below */}
-    </>
-  );
+        
+        {/* Remove the entire Map Container section below */}
+      </>
+    );
 }
